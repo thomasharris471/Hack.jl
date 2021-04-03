@@ -2,11 +2,11 @@
 function intToBinary(int, bits)::Vector{Bool}
     array = []
     while int > 0
-        prepend!(array, Bool(int % 2))
+        append!(array, Bool(int % 2))
         int = (int - int % 2)/2
     end
     while Base.length(array) < bits
-        prepend!(array, Bool(0))
+        append!(array, Bool(0))
     end
     return array
 end
