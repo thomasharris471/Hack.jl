@@ -1,3 +1,4 @@
+#a
 function intToBinary(int, bits)::Vector{Bool}
     array = []
     while int > 0
