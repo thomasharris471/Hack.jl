@@ -13,21 +13,25 @@ end
 
 function test!(chip::Chip)
     inputData = [testData(input) for input in chip.inputs]
+    orderedIns = []
+    orderedOuts = []
     for testvalues in Iterators.product(inputData...)
         map(set!, chip.inputs, testvalues)
         eval!(chip)
         for input in chip.inputs
             print(value(input))
             print(" ")
+            append!(orderedIns, [value(input)])
         end
         print(" | ")
         for output in chip.outputs
             print(value(output))
             print(" ")
+            append!(orderedOuts, [value(output)])
         end
         println()
     end
-    return nothing
+    return (orderedIns, orderedOuts)
 end
 
 

@@ -5,6 +5,10 @@ export
 
     #utility functions
     test!,
+    testData,
+    set!,
+    eval!,
+    value,
 
     #one bit logic gates
     Nand, 
@@ -26,13 +30,22 @@ export
     Mux4Way16,
     Mux8Way16,
     DMux4Way,
-    DMux8Way
+    DMux8Way,
 
+    #artihmetic chips
+    Adder,
+    FullAdder,
+    Add16,
+    Inc16,
+    Zero,
+    Negate,
+    ALU
 
 
 include("chips.jl")
 include("pins.jl")
 include("utils.jl")
+include("arithmeticchips.jl")
 
 
 
