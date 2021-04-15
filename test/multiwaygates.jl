@@ -1,9 +1,18 @@
 using Hack
 using Test
 
+
+@testset "Nand3Way" begin
+    test!(Nand3Way())
+end
+
+
+#=
 @testset "DMux8Way" begin
     test!(DMux8Way())
 end
+
+=#
 
 #=
 

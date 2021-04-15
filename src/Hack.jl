@@ -1,10 +1,13 @@
 module Hack
 
+using MutableNamedTuples
+
 # Write your package code here.
 export
 
     #utility functions
     test!,
+    testseq!,
     testData,
     set!,
     eval!,
@@ -31,6 +34,7 @@ export
     Mux8Way16,
     DMux4Way,
     DMux8Way,
+    Nand3Way,
 
     #artihmetic chips
     Adder,
@@ -39,13 +43,18 @@ export
     Inc16,
     Zero,
     Negate,
-    ALU
+    ALU,
+
+    #sequential chips
+    DFF,
+    DFF2
 
 
 include("chips.jl")
 include("pins.jl")
 include("utils.jl")
 include("arithmeticchips.jl")
+include("sequentialchips.jl")
 
 
 

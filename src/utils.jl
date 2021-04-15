@@ -17,7 +17,9 @@ function test!(chip::Chip)
     orderedOuts = []
     for testvalues in Iterators.product(inputData...)
         map(set!, chip.inputs, testvalues)
-        eval!(chip)
+        for i = 1:10
+            eval!(chip)
+        end
         for input in chip.inputs
             print(value(input))
             print(" ")
@@ -34,4 +36,29 @@ function test!(chip::Chip)
     return (orderedIns, orderedOuts)
 end
 
+
+function testseq!(chip::Chip)
+    inputData = [[0,0,0,0,0,0,0,0,0,1, 1, 1, 1, 1, 1, 1, 1], [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1]]
+    orderedIns = []
+    orderedOuts = []
+    for testvalues in Iterators.product(inputData...)
+        map(set!, chip.inputs, testvalues)
+        for i = 1:10
+            eval!(chip)
+        end
+        for input in chip.inputs
+            print(value(input))
+            print(" ")
+            append!(orderedIns, [value(input)])
+        end
+        print(" | ")
+        for output in chip.outputs
+            print(value(output))
+            print(" ")
+            append!(orderedOuts, [value(output)])
+        end
+        println()
+    end
+    return (orderedIns, orderedOuts)
+end
 

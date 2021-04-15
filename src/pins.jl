@@ -1,7 +1,7 @@
 mutable struct Pin
     value
     function Pin()
-        return new()
+        return new(false)
     end
 end
 

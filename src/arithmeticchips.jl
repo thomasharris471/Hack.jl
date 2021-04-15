@@ -4,7 +4,7 @@ struct Adder <: Chip
     outputs
 
     function Adder(a = Pin(), b = Pin())
-        inputs = (a = a, b = b)
+        inputs = MutableNamedTuple(a = a, b = b)
         sumChip = Xor(a, b)
         carryChip = And(a, b)
         parts = [sumChip, carryChip] 
@@ -19,7 +19,7 @@ struct FullAdder <: Chip
     outputs
 
     function FullAdder(a = Pin(), b = Pin(), c = Pin())
-        inputs = (a = a, b = b, c = c)
+        inputs = MutableNamedTuple(a = a, b = b, c = c)
         g1 = Adder(a, b)
         g2 = Adder(g1.outputs.sum, c)
         g3 = Or(g1.outputs.carry, g2.outputs.carry)
@@ -35,7 +35,7 @@ struct Add16 <: Chip
     outputs
 
     function Add16(a = [Pin() for i in 1:16], b = [Pin() for i in 1:16])
-        inputs = (a = a, b = b)
+        inputs = MutableNamedTuple(a = a, b = b)
         parts = []
         push!(parts, Adder(a[1], b[1]))
         for i in 2:16
@@ -55,7 +55,7 @@ struct Inc16 <: Chip
     outputs
 
     function Inc16(a = [Pin() for i in 1:16])
-        inputs = (a = a, )
+        inputs = MutableNamedTuple(a = a, )
         g1pins = [Pin() for i in 1:16]
         for i in 1:16
             set!(g1pins[i], i==1)
@@ -75,7 +75,7 @@ struct Zero <: Chip
     outputs
 
     function Zero(x = [Pin() for i in 1:16],  zx = Pin())
-        inputs = (x = x, zx = zx )
+        inputs = MutableNamedTuple(x = x, zx = zx )
         notzx = Not(zx)
         parts = []
         push!(parts, notzx)
@@ -96,7 +96,7 @@ struct Negate <: Chip
     outputs
 
     function Negate(x = [Pin() for i in 1:16],  nx = Pin())
-        inputs = (x = x, nx = nx )
+        inputs = MutableNamedTuple(x = x, nx = nx )
         inverted = Not16(x)
         negated = Inc16(inverted.outputs.Q)
         muxed = Mux16(x, negated.outputs.Q, nx)
@@ -114,7 +114,7 @@ struct ALU <: Chip
     outputs
 
     function ALU(x = [Pin() for i in 1:16], y = [Pin() for i in 1:16], zx = Pin(), nx = Pin(), zy = Pin(), ny = Pin(), f = Pin(), no = Pin())
-        inputs = (x = x, y = y, zx = zx, nx = nx, zy = zy, ny = ny, f = f, no = no )
+        inputs = MutableNamedTuple(x = x, y = y, zx = zx, nx = nx, zy = zy, ny = ny, f = f, no = no )
         x1 = Zero(x, zx)
         x2 = Negate(x1.outputs.Q, nx)
 

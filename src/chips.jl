@@ -13,7 +13,7 @@ struct Nand <: Chip
     outputs
 
     function Nand(a = Pin(), b = Pin())
-        inputs = (A = a, B = b)
+        inputs = MutableNamedTuple(A = a, B = b)
         parts = nothing
         outputs = (Q = Pin(),)
         return new(inputs, parts, outputs)
@@ -33,7 +33,7 @@ struct Not <: Chip
     outputs
 
     function Not(a = Pin())
-        inputs = (A = a, )
+        inputs = MutableNamedTuple(A = a, )
         g1 = Nand(a, a)
         parts = [g1] 
         outputs = (Q = g1.outputs.Q,)
@@ -47,7 +47,7 @@ struct And <: Chip
     outputs
 
     function And(a = Pin(), b=Pin())
-        inputs = (A = a, B = b)
+        inputs = MutableNamedTuple(A = a, B = b)
         g1 = Nand(a, b)
         g2 = Not(g1.outputs.Q)
         parts = [g1, g2] 
@@ -62,7 +62,7 @@ struct Or<: Chip
     outputs
 
     function Or(a = Pin(), b=Pin())
-        inputs = (A = a, B = b)
+        inputs = MutableNamedTuple(A = a, B = b)
         g1 = Not(a) 
         g2 = Not(b) 
         g3 = Nand(g1.outputs.Q, g2.outputs.Q)
@@ -78,7 +78,7 @@ struct Xor<: Chip
     outputs
 
     function Xor(a = Pin(), b=Pin())
-        inputs = (A = a, B = b)
+        inputs = MutableNamedTuple(A = a, B = b)
         g1 = Not(a) 
         g2 = Not(b)
         g3 = And(a, g2.outputs.Q)
@@ -96,7 +96,7 @@ struct Mux <: Chip
     outputs
 
     function Mux(a = Pin(), b=Pin(), sel=Pin())
-        inputs = (A = a, B = b, sel = sel)
+        inputs = MutableNamedTuple(A = a, B = b, sel = sel)
         g1 = Not(sel) 
         g2 = And(a, g1.outputs.Q)
         g3 = And(b, sel)
@@ -113,7 +113,7 @@ struct DMux <: Chip
     outputs
 
     function DMux(input = Pin(), sel = Pin() )
-        inputs = (input = input, sel = sel)
+        inputs = MutableNamedTuple(input = input, sel = sel)
         g1 = Not(sel)
         aout = And(g1.outputs.Q, input)
         bout = And(sel, input)
@@ -135,7 +135,7 @@ struct Not16 <: Chip
     outputs
 
     function Not16(a = [Pin() for i in 1:16])
-        inputs = (A = a, )
+        inputs = MutableNamedTuple(A = a, )
         parts = [Not(a[i]) for i in 1:16] 
         outputs = (Q = [chip.outputs.Q for chip in parts],)
         return new(inputs, parts, outputs)
@@ -148,7 +148,7 @@ struct And16 <: Chip
     outputs
 
     function And16(a = [Pin() for i in 1:16] , b = [Pin() for i in 1:16])
-        inputs = (A = a, B = b)
+        inputs = MutableNamedTuple(A = a, B = b)
         parts = [And(a[i], b[i]) for i in 1:16] 
         outputs = (Q = [chip.outputs.Q for chip in parts],)
         return new(inputs, parts, outputs)
@@ -161,7 +161,7 @@ struct Or16 <: Chip
     outputs
 
     function Or16(a = [Pin() for i in 1:16] , b = [Pin() for i in 1:16])
-        inputs = (A = a, B = b)
+        inputs = MutableNamedTuple(A = a, B = b)
         parts = [Or(a[i], b[i]) for i in 1:16] 
         outputs = (Q = [chip.outputs.Q for chip in parts],)
         return new(inputs, parts, outputs)
@@ -174,7 +174,7 @@ struct Mux16 <: Chip
     outputs
 
     function Mux16(a = [Pin() for i in 1:16] , b = [Pin() for i in 1:16], sel = Pin())
-        inputs = (A = a, B = b, sel = sel)
+        inputs = MutableNamedTuple(A = a, B = b, sel = sel)
         parts = [Mux(a[i], b[i], sel) for i in 1:16] 
         outputs = (Q = [chip.outputs.Q for chip in parts],)
         return new(inputs, parts, outputs)
@@ -187,7 +187,7 @@ struct Or8Way <: Chip
     outputs
 
     function Or8Way(a = [Pin() for i in 1:8])
-        inputs = (A = a,)
+        inputs = MutableNamedTuple(A = a,)
         parts = [Or(a[1], a[2])]
         for i = 2:8
             append!(parts, [Or(parts[i-1].outputs.Q, a[i])])
@@ -203,7 +203,7 @@ struct Mux4Way16 <: Chip
     outputs
 
     function Mux4Way16(a = [Pin() for i in 1:16], b = [Pin() for i in 1:16], c = [Pin() for i in 1:16], d = [Pin() for i in 1:16], sel = [Pin() for i in 1:2]) 
-        inputs = (A = a, B = b, C = c, D = d, sel = sel)
+        inputs = MutableNamedTuple(A = a, B = b, C = c, D = d, sel = sel)
 
         g1 = Mux16(a, b, sel[1])
         g2 = Mux16(c, d, sel[1])
@@ -221,7 +221,7 @@ struct Mux8Way16 <: Chip
     outputs
 
     function Mux8Way16(a = [Pin() for i in 1:16], b = [Pin() for i in 1:16], c = [Pin() for i in 1:16], d = [Pin() for i in 1:16],  e = [Pin() for i in 1:16], f = [Pin() for i in 1:16], g = [Pin() for i in 1:16], h = [Pin() for i in 1:16], sel = [Pin() for i in 1:3]) 
-        inputs = (A = a, B = b, C = c, D = d, E = e, F = f, G = g, H = h, sel = sel)
+        inputs = MutableNamedTuple(A = a, B = b, C = c, D = d, E = e, F = f, G = g, H = h, sel = sel)
 
         g1 = Mux4Way16(a, b, c, d, [sel[1], sel[2]])
         g2 = Mux4Way16(e, f, g, h, [sel[1], sel[2]])
@@ -240,7 +240,7 @@ struct DMux4Way <: Chip
     outputs
 
     function DMux4Way(input = Pin(), sel = [Pin() for i in 1:2]) 
-        inputs = (input = input, sel = sel)
+        inputs = MutableNamedTuple(input = input, sel = sel)
 
         g1 = DMux(input, sel[2])
         g2 = DMux(g1.outputs.a, sel[1])
@@ -258,7 +258,7 @@ struct DMux8Way <: Chip
     outputs
 
     function DMux8Way(input = Pin(), sel = [Pin() for i in 1:3]) 
-        inputs = (input = input, sel = sel)
+        inputs = MutableNamedTuple(input = input, sel = sel)
 
         g1 = DMux(input, sel[3])
         g2 = DMux4Way(g1.outputs.a, [sel[1], sel[2]])
@@ -268,6 +268,26 @@ struct DMux8Way <: Chip
         outputs = (a = g2.outputs.a, b = g2.outputs.b, c = g2.outputs.c, d = g2.outputs.d, e = g3.outputs.a, f = g3.outputs.b, g = g3.outputs.c, h = g3.outputs.d)
         return new(inputs, parts, outputs)
     end
+end
+
+struct Nand3Way <: Chip
+    inputs
+    parts
+    outputs
+
+    function Nand3Way(a = Pin(), b = Pin(), c = Pin()) 
+        inputs = MutableNamedTuple(A = a, B = b, C = c)
+
+        g1 = Nand(a, b)
+        g2 = Not(c)
+        g3 = Or(g1.outputs.Q, g2.outputs.Q)
+
+        parts = [g1, g2, g3]
+        
+        outputs = (Q = g3.outputs.Q,)
+        return new(inputs, parts, outputs)
+    end
+
 end
 
 
