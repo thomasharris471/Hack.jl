@@ -7,16 +7,33 @@ function eval!(chip::Chip)
     return nothing
 end
 
+function updateNextOutput!(chip::Chip)
+    for part in chip.parts
+        updateNextOutput!(part)
+    end
+    return nothing
+end
+
+function updateOutput!(chip::Chip)
+    for part in chip.parts
+        updateOutput!(part)
+    end
+    return nothing
+end
+
+
 struct Nand <: Chip
     inputs
     parts
     outputs
+    nextoutputs
 
     function Nand(a = Pin(), b = Pin())
         inputs = MutableNamedTuple(A = a, B = b)
         parts = nothing
         outputs = (Q = Pin(),)
-        return new(inputs, parts, outputs)
+        nextoutputs = (Q = Pin(),)
+        return new(inputs, parts, outputs, nextoutputs)
     end
 end
 
@@ -26,6 +43,27 @@ function eval!(chip::Nand)
     set!(chip.outputs.Q, !(A && B))
     return nothing
 end
+
+function updateNextOutput!(chip::Nand)
+    A = value(chip.inputs.A)
+    B = value(chip.inputs.B)
+    set!(chip.nextoutputs.Q, !(A && B))
+    return nothing
+end
+
+function updateOutput!(chip::Nand)
+    if (chip.outputs.Q.value != value(chip.nextoutputs.Q))
+        println("CCCCHHHHAAAANNNNNGGEEEEEE")
+    end
+    #println("current value")
+    #println(chip.outputs.Q.value)
+    #println("next value is")
+    #println(chip.nextoutputs.Q.value)
+    set!(chip.outputs.Q, value(chip.nextoutputs.Q))
+    return nothing
+end
+
+
 
 struct Not <: Chip
     inputs
@@ -71,6 +109,23 @@ struct Or<: Chip
         return new(inputs, parts, outputs)
     end
 end
+
+struct Nor<: Chip
+    inputs
+    parts
+    outputs
+
+    function Nor(a = Pin(), b=Pin())
+        inputs = MutableNamedTuple(A = a, B = b)
+        g1 = Or(a, b) 
+        g2 = Not(g1.outputs.Q)
+        parts = [g1, g2] 
+        outputs = (Q = g2.outputs.Q,)
+        return new(inputs, parts, outputs)
+    end
+end
+
+
 
 struct Xor<: Chip
     inputs

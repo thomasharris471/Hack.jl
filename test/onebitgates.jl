@@ -29,3 +29,8 @@ end
 @testset "DMux" begin
     test!(DMux())
 end
+
+
+@testset "Nor" begin
+    test!(Nor())
+end

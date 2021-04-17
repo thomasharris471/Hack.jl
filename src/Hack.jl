@@ -12,11 +12,14 @@ export
     set!,
     eval!,
     value,
+    updateNextOutput!,
+    updateOutput!,
 
     #one bit logic gates
     Nand, 
     Not,
     And,
+    Nor,
     Xor,
     Or,
     Mux,
@@ -46,6 +49,8 @@ export
     ALU,
 
     #sequential chips
+    SRNand,
+    SR,
     DFF,
     DFF2
 

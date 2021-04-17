@@ -18,7 +18,10 @@ function test!(chip::Chip)
     for testvalues in Iterators.product(inputData...)
         map(set!, chip.inputs, testvalues)
         for i = 1:10
-            eval!(chip)
+#            eval!(chip)
+            updateNextOutput!(chip)
+            updateOutput!(chip)
+  
         end
         for input in chip.inputs
             print(value(input))
@@ -38,26 +41,30 @@ end
 
 
 function testseq!(chip::Chip)
-    inputData = [[0,0,0,0,0,0,0,0,0,1, 1, 1, 1, 1, 1, 1, 1], [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1]]
+    #inputData = [[0,0,0,0,0,0,0,0,0,1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1], [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1, 0, 0, 0, 1, 1, 1]]
+    
+    inputData = [[1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1], [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1, 0, 0, 0, 1, 1, 1]]
+    #
     orderedIns = []
     orderedOuts = []
     for testvalues in Iterators.product(inputData...)
         map(set!, chip.inputs, testvalues)
-        for i = 1:10
-            eval!(chip)
+        for i = 1:3
+            updateNextOutput!(chip)
+            updateOutput!(chip)
+            for input in chip.inputs
+                print(value(input))
+                print(" ")
+                append!(orderedIns, [value(input)])
+            end
+            print(" | ")
+            for output in chip.outputs
+                print(value(output))
+                print(" ")
+                append!(orderedOuts, [value(output)])
+            end
+            println()
         end
-        for input in chip.inputs
-            print(value(input))
-            print(" ")
-            append!(orderedIns, [value(input)])
-        end
-        print(" | ")
-        for output in chip.outputs
-            print(value(output))
-            print(" ")
-            append!(orderedOuts, [value(output)])
-        end
-        println()
     end
     return (orderedIns, orderedOuts)
 end

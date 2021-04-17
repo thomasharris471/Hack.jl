@@ -1,3 +1,48 @@
+struct SRNand <: Chip
+    inputs
+    parts
+    outputs
+   
+    function SRNand(S = Pin(), R = Pin())
+        inputs = MutableNamedTuple(S = S, R = R)
+
+        top = Nand()
+        bottom = Nand()
+        top.inputs.A = R
+        top.inputs.B = bottom.outputs.Q
+
+        bottom.inputs.A = top.outputs.Q
+        bottom.inputs.B = S
+
+        parts = [top, bottom]
+        outputs = (Q = top.outputs.Q, )
+        return new(inputs, parts, outputs)
+    end
+end
+
+
+
+struct SR <: Chip
+    inputs
+    parts
+    outputs
+   
+    function SR(S = Pin(), R = Pin())
+        inputs = MutableNamedTuple(S = S, R = R)
+
+        top = Nor()
+        bottom = Nor()
+        top.inputs.A = R
+        top.inputs.B = bottom.outputs.Q
+
+        bottom.inputs.A = top.outputs.Q
+        bottom.inputs.B = S
+
+        parts = [top, bottom]
+        outputs = (Q = top.outputs.Q, )
+        return new(inputs, parts, outputs)
+    end
+end
 
 struct DFF2 <: Chip
     inputs
