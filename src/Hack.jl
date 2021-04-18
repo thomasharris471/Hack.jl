@@ -14,6 +14,19 @@ export
     value,
     updateNextOutput!,
     updateOutput!,
+    rewire!,
+    out,
+    update!,
+    increment!,
+    tick!,
+    output,
+    testBit!,
+
+    #pin
+    Pin,
+
+    #clock
+    Clock,
 
     #one bit logic gates
     Nand, 
@@ -50,9 +63,12 @@ export
 
     #sequential chips
     SRNand,
+    SRAO,
     SR,
     DFF,
-    DFF2
+    DFF2,
+    Bit
+
 
 
 include("chips.jl")

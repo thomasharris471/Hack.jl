@@ -5,6 +5,11 @@ mutable struct Pin
     end
 end
 
+function increment!(pin::Pin)
+    pin.value = !pin.value
+end
+
+
 function value(pin::Pin)
     return pin.value
 end

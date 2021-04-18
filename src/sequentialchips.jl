@@ -8,11 +8,11 @@ struct SRNand <: Chip
 
         top = Nand()
         bottom = Nand()
-        top.inputs.A = R
-        top.inputs.B = bottom.outputs.Q
+        rewire!(top, A = R)
+        rewire!(top, B = bottom.outputs.Q)
 
-        bottom.inputs.A = top.outputs.Q
-        bottom.inputs.B = S
+        rewire!(bottom, A = top.outputs.Q)
+        rewire!(bottom, B =  S)
 
         parts = [top, bottom]
         outputs = (Q = top.outputs.Q, )
@@ -20,7 +20,31 @@ struct SRNand <: Chip
     end
 end
 
+ struct SRAO <: Chip
+    inputs
+    parts
+    outputs
+   
+    function SRAO(S = Pin(), R = Pin())
+        inputs = MutableNamedTuple(S = S, R = R)
 
+        left = Or()
+        middle = Not()
+        right = And()
+        
+        rewire!(left, A = output(right), B = S)
+        rewire!(middle, A = R)
+        rewire!(right, A = output(left), B = output(middle))
+
+        parts = [left, middle, right]
+        outputs = (Q = right.outputs.Q, )
+
+        raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+end
+
+  
 
 struct SR <: Chip
     inputs
@@ -32,24 +56,27 @@ struct SR <: Chip
 
         top = Nor()
         bottom = Nor()
-        top.inputs.A = R
-        top.inputs.B = bottom.outputs.Q
+        
+        rewire!(top, A = R)
+        rewire!(top, B = bottom.outputs.Q)
 
-        bottom.inputs.A = top.outputs.Q
-        bottom.inputs.B = S
+        rewire!(bottom, A = top.outputs.Q)
+        rewire!(bottom, B = S)
 
         parts = [top, bottom]
         outputs = (Q = top.outputs.Q, )
+
+        raceClear!(parts)
         return new(inputs, parts, outputs)
     end
 end
 
-struct DFF2 <: Chip
+struct DFF <: Chip
     inputs
     parts
     outputs
 
-    function DFF2(data = Pin(), clock = Pin())
+    function DFF(data = Pin(), clock = Pin())
         inputs = MutableNamedTuple(data = data, clock = clock)
 
         top = Nand()
@@ -60,38 +87,45 @@ struct DFF2 <: Chip
         forwardTop = Nand()
         forwardBottom = Nand()
 
-        top.inputs.A = bottom.outputs.Q
-        top.inputs.B = topMid.outputs.Q
+        rewire!(top, A = bottom.outputs.Q, B = topMid.outputs.Q)
 
-        topMid.inputs.A = top.outputs.Q
-        topMid.inputs.B = clock
+        rewire!(topMid, A = top.outputs.Q, B = clock)
+    
+        rewire!(bottomMid, A = topMid.outputs.Q, B = clock, C = bottom.outputs.Q)
 
-        bottomMid.inputs.A = topMid.outputs.Q
-        bottomMid.inputs.B = clock
-        bottomMid.inputs.C = bottom.outputs.Q
+        rewire!(bottom, A = bottomMid.outputs.Q, B = data)
 
-        bottom.inputs.A = bottomMid.outputs.Q
-        bottom.inputs.B = data
+        rewire!(forwardTop, A= topMid.outputs.Q, B = forwardBottom.outputs.Q)
 
-        forwardTop.inputs.A = topMid.outputs.Q
-        forwardTop.inputs.B = forwardBottom.outputs.Q
+        rewire!(forwardBottom, A = forwardTop.outputs.Q, B = bottomMid.outputs.Q)
 
-        forwardBottom.inputs.A = forwardTop.outputs.Q
-        forwardBottom.inputs.B = bottomMid.outputs.Q
                 
         parts = [top, topMid, bottomMid, bottom, forwardTop, forwardBottom] 
         outputs = (Q = forwardTop.outputs.Q,)
+
+        raceClear!(parts)
         return new(inputs, parts, outputs)
     end
 end
 
+function rewire!(chip::DFF; data = chip.inputs.data, clock = clock.inputs.clock)
+    chip.inputs.data = data
+    chip.inputs.clock = clock
+    topMid = chip.parts[2]
+    bottomMid = chip.parts[3]
+    bottom = chip.parts[4]
+    rewire!(topMid, B = clock)
+    rewire!(bottomMid, B = clock)
+    rewire!(bottom, B = data)
+end
 
-struct DFF <: Chip
+
+struct DFF2 <: Chip
     inputs
     parts
     outputs
 
-    function DFF(data = Pin(), clock = Pin())
+    function DFF2(data = Pin(), clock = Pin())
         inputs = MutableNamedTuple(data = data, clock = clock)
 
         oneBottom = Not()
@@ -143,5 +177,30 @@ struct DFF <: Chip
         return new(inputs, parts, outputs)
     end
 end
+
+struct Bit <: Chip
+    inputs
+    parts
+    outputs
+   
+    function Bit(data = Pin(), load = Pin(), clock = Pin())
+        inputs = MutableNamedTuple(data = data, load = load, clock = clock)
+
+        dffload = DFF(load, clock)
+        dffdata = DFF(data, clock)
+        dffcurrent = DFF()
+        g1 = Not(output(dffload))
+        mux = Mux(output(dffdata), output(dffcurrent), output(g1))
+       
+        rewire!(dffcurrent, data = output(mux), clock = clock)
+        parts = [dffload, dffdata, dffcurrent, mux, g1]
+        outputs = (Q = mux.outputs.Q, )
+        raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
 
 

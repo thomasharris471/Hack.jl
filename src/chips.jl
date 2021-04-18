@@ -1,11 +1,41 @@
 abstract type Chip end
 
+function raceClear!(chip::Chip)
+    for i = 1:10000
+        for part in chip.parts
+            eval!(part)
+        end
+    end
+end
+
+function raceClear!(chips::Vector)
+        for chip in chips
+            raceClear!(chip)
+        end
+end
+
+
+
 function eval!(chip::Chip)
     for part in chip.parts
         eval!(part)
     end
     return nothing
 end
+
+function out(chip::Chip)
+    return chip.outputs.Q.value
+end
+
+function output(chip::Chip)
+    return chip.outputs.Q
+end
+
+function update!(chip::Chip)
+    updateNextOutput!(chip)
+    updateOutput!(chip)
+end
+
 
 function updateNextOutput!(chip::Chip)
     for part in chip.parts
@@ -22,6 +52,7 @@ function updateOutput!(chip::Chip)
 end
 
 
+
 struct Nand <: Chip
     inputs
     parts
@@ -30,11 +61,17 @@ struct Nand <: Chip
 
     function Nand(a = Pin(), b = Pin())
         inputs = MutableNamedTuple(A = a, B = b)
-        parts = nothing
+        parts = []
         outputs = (Q = Pin(),)
         nextoutputs = (Q = Pin(),)
         return new(inputs, parts, outputs, nextoutputs)
     end
+end
+
+function rewire!(chip::Nand; A = chip.inputs.A, B = chip.inputs.B)
+    chip.inputs.A = A
+    chip.inputs.B = B
+    return nothing
 end
 
 function eval!(chip::Nand)
@@ -72,12 +109,56 @@ struct Not <: Chip
 
     function Not(a = Pin())
         inputs = MutableNamedTuple(A = a, )
-        g1 = Nand(a, a)
+        g1 = Nand(inputs.A, inputs.A)
         parts = [g1] 
         outputs = (Q = g1.outputs.Q,)
         return new(inputs, parts, outputs)
     end
 end
+
+function rewire!(chip::Not; A = chip.inputs.A)
+    chip.inputs.A = A
+
+    g1 = chip.parts[1]
+
+    rewire!(g1, A = A, B = A)
+
+
+    return nothing
+end
+
+struct Clock <: Chip
+    cycles
+    inputs
+    parts
+    outputs
+
+    function Clock(cycles = 99)
+        if iseven(cycles)
+            cycles = cycles + 1
+        end
+        inputs = nothing
+        parts = [Not() for i = 1:cycles]
+        for i = 2:cycles
+            chip = parts[i]
+            A = parts[i-1].outputs.Q
+            rewire!(chip, A = A)
+        end
+        for chip in parts
+            eval!(chip)
+        end
+        rewire!(parts[1], A = parts[end].outputs.Q)
+        outputs = (Q = parts[1].outputs.Q,)
+        return new(cycles, inputs, parts, outputs)
+    end
+end
+
+function tick!(c::Clock)
+    update!(c)
+    out(c)
+end
+
+
 
 struct And <: Chip
     inputs
@@ -86,13 +167,26 @@ struct And <: Chip
 
     function And(a = Pin(), b=Pin())
         inputs = MutableNamedTuple(A = a, B = b)
-        g1 = Nand(a, b)
+        g1 = Nand(inputs.A, inputs.B)
         g2 = Not(g1.outputs.Q)
         parts = [g1, g2] 
         outputs = (Q = g2.outputs.Q,)
         return new(inputs, parts, outputs)
     end
 end
+
+function rewire!(chip::And; A = chip.inputs.A, B = chip.inputs.B)
+    chip.inputs.A = A
+    chip.inputs.B = B
+
+    g1 = chip.parts[1]
+
+    rewire!(g1, A = A, B = B)
+
+    return nothing
+end
+
+
 
 struct Or<: Chip
     inputs
@@ -101,14 +195,30 @@ struct Or<: Chip
 
     function Or(a = Pin(), b=Pin())
         inputs = MutableNamedTuple(A = a, B = b)
-        g1 = Not(a) 
-        g2 = Not(b) 
+        g1 = Not(inputs.A) 
+        g2 = Not(inputs.B) 
         g3 = Nand(g1.outputs.Q, g2.outputs.Q)
         parts = [g1, g2, g3] 
         outputs = (Q = g3.outputs.Q,)
         return new(inputs, parts, outputs)
     end
 end
+
+function rewire!(chip::Or; A = chip.inputs.A, B = chip.inputs.B)
+    chip.inputs.A = A
+    chip.inputs.B = B
+
+    g1 = chip.parts[1]
+    g2 = chip.parts[2]
+
+    rewire!(g1, A = A)
+
+    rewire!(g2, A = B)
+
+    return nothing
+end
+
+
 
 struct Nor<: Chip
     inputs
@@ -117,12 +227,23 @@ struct Nor<: Chip
 
     function Nor(a = Pin(), b=Pin())
         inputs = MutableNamedTuple(A = a, B = b)
-        g1 = Or(a, b) 
+        g1 = Or(inputs.A, inputs.B) 
         g2 = Not(g1.outputs.Q)
         parts = [g1, g2] 
         outputs = (Q = g2.outputs.Q,)
         return new(inputs, parts, outputs)
     end
+end
+
+function rewire!(chip::Nor; A = chip.inputs.A, B = chip.inputs.B)
+    chip.inputs.A = A
+    chip.inputs.B = B
+
+    g1 = chip.parts[1]
+
+    rewire!(g1, A = A, B = B)
+
+    return nothing
 end
 
 
@@ -344,5 +465,22 @@ struct Nand3Way <: Chip
     end
 
 end
+
+function rewire!(chip::Nand3Way; A = chip.inputs.A, B = chip.inputs.B, C = chip.inputs.C)
+
+    chip.inputs.A = A
+    chip.inputs.B = B
+    chip.inputs.C = C
+
+    g1 = chip.parts[1]
+    g2 = chip.parts[2]
+
+    rewire!(g1, A = A, B = B)
+    rewire!(g2, A = C)
+
+    return nothing
+end
+
+
 
 
