@@ -51,6 +51,14 @@ function updateOutput!(chip::Chip)
     return nothing
 end
 
+function numberOfNandGates(chip::Chip)
+    number = 0
+    for part in chip.parts
+        number = number + numberOfNandGates(part)
+    end
+    return number
+end
+
 
 
 struct Nand <: Chip
@@ -67,6 +75,11 @@ struct Nand <: Chip
         return new(inputs, parts, outputs, nextoutputs)
     end
 end
+function numberOfNandGates(chip::Nand)
+    return 1 
+end
+
+
 
 function rewire!(chip::Nand; A = chip.inputs.A, B = chip.inputs.B)
     chip.inputs.A = A
@@ -283,6 +296,25 @@ struct Mux <: Chip
     end
 end
 
+function rewire!(chip::Mux; A = chip.inputs.A, B = chip.inputs.B, sel = chip.inputs.sel)
+    chip.inputs.A = A
+    chip.inputs.B = B
+    chip.inputs.sel = sel
+
+    g1 = chip.parts[1]
+    g2 = chip.parts[2]
+    g3 = chip.parts[3]
+
+    rewire!(g1, A = sel)
+    rewire!(g2, A = A)
+    rewire!(g3, A = B)
+
+
+    return nothing
+end
+
+
+
 struct DMux <: Chip
     inputs
     parts
@@ -317,6 +349,20 @@ struct Not16 <: Chip
         return new(inputs, parts, outputs)
     end
 end
+
+function rewire!(chip::Not16; A = chip.inputs.A)
+    chip.inputs.A = A
+   
+    for i = 1:16
+        rewire!(chip.parts[i], A = A[i])
+    end
+
+
+    return nothing
+end
+
+
+
 
 struct And16 <: Chip
     inputs
@@ -356,6 +402,21 @@ struct Mux16 <: Chip
         return new(inputs, parts, outputs)
     end
 end
+
+function rewire!(chip::Mux16; A = chip.inputs.A, B = chip.inputs.B, sel = chip.inputs.sel)
+    chip.inputs.A = A
+    chip.inputs.B = B
+    chip.inputs.sel = sel
+
+    for i in 1:16
+        rewire!(chip.parts[i], A = A[i], B = B[i])
+    end
+
+
+    return nothing
+end
+
+
 
 struct Or8Way <: Chip
     inputs

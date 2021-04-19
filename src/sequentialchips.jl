@@ -39,7 +39,7 @@ end
         parts = [left, middle, right]
         outputs = (Q = right.outputs.Q, )
 
-        raceClear!(parts)
+       # raceClear!(parts)
         return new(inputs, parts, outputs)
     end
 end
@@ -66,7 +66,7 @@ struct SR <: Chip
         parts = [top, bottom]
         outputs = (Q = top.outputs.Q, )
 
-        raceClear!(parts)
+       # raceClear!(parts)
         return new(inputs, parts, outputs)
     end
 end
@@ -103,7 +103,7 @@ struct DFF <: Chip
         parts = [top, topMid, bottomMid, bottom, forwardTop, forwardBottom] 
         outputs = (Q = forwardTop.outputs.Q,)
 
-        raceClear!(parts)
+       # raceClear!(parts)
         return new(inputs, parts, outputs)
     end
 end
@@ -186,21 +186,218 @@ struct Bit <: Chip
     function Bit(data = Pin(), load = Pin(), clock = Pin())
         inputs = MutableNamedTuple(data = data, load = load, clock = clock)
 
-        dffload = DFF(load, clock)
-        dffdata = DFF(data, clock)
-        dffcurrent = DFF()
-        g1 = Not(output(dffload))
-        mux = Mux(output(dffdata), output(dffcurrent), output(g1))
-       
-        rewire!(dffcurrent, data = output(mux), clock = clock)
-        parts = [dffload, dffdata, dffcurrent, mux, g1]
-        outputs = (Q = mux.outputs.Q, )
-        raceClear!(parts)
+        dff = DFF()
+        mux = Mux(output(dff), data, load) 
+
+        rewire!(dff, data = output(mux), clock = clock)
+
+        parts = [dff, mux]
+        outputs = (Q = output(dff), )
+       # raceClear!(parts)
         return new(inputs, parts, outputs)
     end
 
 
 end
+
+struct Register <: Chip
+    inputs
+    parts
+    outputs
+   
+    function Register(data = [Pin() for i in 1:16], load = Pin(), clock = Pin())
+        inputs = MutableNamedTuple(data = data, load = load, clock = clock)
+
+        parts = [Bit(data[i], load, clock) for i in 1:16]
+
+        outputs = (Q = output.(parts), )
+       # raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
+struct RAM8 <: Chip
+    inputs
+    parts
+    outputs
+   
+    function RAM8(data = [Pin() for i in 1:16], address = [Pin() for i in 1:3], load = Pin(), clock = Pin())
+
+        inputs = MutableNamedTuple(data = data, address = address, load = load, clock = clock)
+
+        dmux = DMux8Way(load, address)
+
+        registers = [Register(data, dmux.outputs[j], clock) for j in 1:8]
+        mux = Mux8Way16(output.(registers)..., address)
+        
+        parts::Vector{Chip} = [mux, dmux]
+        append!(parts, registers)
+
+        outputs = (Q = output(mux), )
+       # raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
+struct RAM64 <: Chip
+    inputs
+    parts
+    outputs
+   
+    function RAM64(data = [Pin() for i in 1:16], address = [Pin() for i in 1:6], load = Pin(), clock = Pin())
+
+        inputs = MutableNamedTuple(data = data, address = address, load = load, clock = clock)
+
+        dmux = DMux8Way(load, address[1:3])
+
+        registers = [RAM8(data, address[4:6], dmux.outputs[j], clock) for j in 1:8]
+        mux = Mux8Way16(output.(registers)..., address[1:3])
+        
+        parts::Vector{Chip} = [mux, dmux]
+        append!(parts, registers)
+
+        outputs = (Q = output(mux), )
+       # raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
+struct RAM512 <: Chip
+    inputs
+    parts
+    outputs
+   
+    function RAM512(data = [Pin() for i in 1:16], address = [Pin() for i in 1:9], load = Pin(), clock = Pin())
+
+        inputs = MutableNamedTuple(data = data, address = address, load = load, clock = clock)
+
+        dmux = DMux8Way(load, address[1:3])
+
+        registers = [RAM64(data, address[4:9], dmux.outputs[j], clock) for j in 1:8]
+        mux = Mux8Way16(output.(registers)..., address[1:3])
+        
+        parts::Vector{Chip} = [mux, dmux]
+        append!(parts, registers)
+
+        outputs = (Q = output(mux), )
+       # raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
+
+struct RAM4K <: Chip
+    inputs
+    parts
+    outputs
+   
+    function RAM4K(data = [Pin() for i in 1:16], address = [Pin() for i in 1:12], load = Pin(), clock = Pin())
+
+        inputs = MutableNamedTuple(data = data, address = address, load = load, clock = clock)
+
+        dmux = DMux8Way(load, address[1:3])
+
+        registers = [RAM512(data, address[4:12], dmux.outputs[j], clock) for j in 1:8]
+        mux = Mux8Way16(output.(registers)..., address[1:3])
+        
+        parts::Vector{Chip} = [mux, dmux]
+        append!(parts, registers)
+
+        outputs = (Q = output(mux), )
+       # raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
+
+
+struct RAM16K <: Chip
+    inputs
+    parts
+    outputs
+   
+    function RAM16K(data = [Pin() for i in 1:16], address = [Pin() for i in 1:14], load = Pin(), clock = Pin())
+
+        inputs = MutableNamedTuple(data = data, address = address, load = load, clock = clock)
+
+        dmux = DMux4Way(load, address[1:2])
+
+        registers = [RAM4K(data, address[2:14], dmux.outputs[j], clock) for j in 1:4]
+        mux = Mux4Way16(output.(registers)..., address[1:2])
+        
+        parts::Vector{Chip} = [mux, dmux]
+        append!(parts, registers)
+
+        outputs = (Q = output(mux), )
+       # raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
+
+struct PC <: Chip
+    inputs
+    parts
+    outputs
+   
+    function PC(data = [Pin() for i in 1:16], inc = Pin(), load = Pin(), reset = Pin(), clock = Pin())
+
+        inputs = MutableNamedTuple(data = data, inc = inc, load = load, reset = reset, clock = clock)
+
+        muxLeft = Mux16()
+        muxMiddle = Mux16()
+        muxRight = Mux16()
+
+        loadPin = Pin()
+        set!(loadPin, true)
+        register = Register(output(muxRight), loadPin, clock)
+        incrementer = Inc16(output(register))
+
+        rewire!(muxLeft, A = output(register), B = output(incrementer), sel = inc)
+
+        rewire!(muxMiddle, A = output(muxLeft), B = output(register), sel = load)
+
+        zeroPins = [Pin() for i in 1:16]
+        for pin in zeroPins
+            set!(pin, false)
+        end
+        rewire!(muxRight, A = zeroPins, B = output(muxMiddle), sel = reset)
+
+        parts = [muxLeft, muxMiddle, muxRight, register, incrementer]
+
+        outputs = (Q = output(register), )
+       # raceClear!(parts)
+        return new(inputs, parts, outputs)
+    end
+
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

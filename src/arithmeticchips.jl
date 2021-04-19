@@ -76,19 +76,33 @@ struct Zero <: Chip
 
     function Zero(x = [Pin() for i in 1:16],  zx = Pin())
         inputs = MutableNamedTuple(x = x, zx = zx )
-        notzx = Not(zx)
-        parts = []
-        push!(parts, notzx)
-        for i in 1:16
-            push!(parts, And(x[i], notzx.outputs.Q) )
+        
+        zeros = [Pin() for i in 1:16]
+        for z in zeros
+            set!(z, false)
         end
-        outs = [parts[i].outputs.Q for i in 2:17]
+        mux = Mux16(x, zeros, zx)
 
-        outputs = (Q = outs, )
+        parts = [mux]
+
+        outputs = (Q = output(mux), )
 
         return new(inputs, parts, outputs)
     end
 end
+
+function rewire!(chip::Zero; x = chip.inputs.x,  zx = chip.inputs.zx)
+
+    chip.inputs.x = x
+    chip.inputs.zx = zx 
+
+    mux = chip.parts[1]
+
+    rewire!(mux, A = x, sel = zx)
+
+end
+
+
 
 struct Negate <: Chip
     inputs
@@ -106,6 +120,23 @@ struct Negate <: Chip
         return new(inputs, parts, outputs)
     end
 end
+
+function rewire!(chip::Negate; x = chip.inputs.x,  nx = chip.inputs.nx)
+
+    chip.inputs.x = x
+    chip.inputs.nx = nx
+
+    inverted = chip.parts[1]
+    muxed = chip.parts[3]
+
+    rewire!(inverted, A = x)
+    rewire!(muxed, A = x, sel = nx)
+
+end
+
+
+
+
 
 
 struct ALU <: Chip
@@ -132,14 +163,45 @@ struct ALU <: Chip
             
         zr0 = Or(or1.outputs.Q, or2.outputs.Q)
         zr = Not(zr0.outputs.Q) 
-
-
-        parts = [x1, x2, y1, y2, g1, g2, g3, g4, or1, or2,zr0,  zr]
+        parts = [x1, x2, y1, y2, g1, g2, g3, g4, or1, or2,zr0,  zr] 
         outputs = (out = g4.outputs.Q, zr = zr.outputs.Q, ng = g4.outputs.Q[16])
         return new(inputs, parts, outputs)
     end
 end
 
+function rewire!(chip::ALU; x = chip.inputs.x, y = chip.inputs.y, zx = chip.inputs.zx, nx = chip.inputs.nx, zy = chip.inputs.zy, ny = chip.inputs.ny, f = chip.inputs.f, no = chip.inputs.no)
+
+    chip.inputs.x = x
+    chip.inputs.y = y
+    chip.inputs.zx = zx
+    chip.inputs.nx = nx
+    chip.inputs.zy = zy
+    chip.inputs.ny = ny
+    chip.inputs.f = f
+    chip.inputs.no = no
+
+    x1 = chip.parts[1]
+    x2 = chip.parts[2]
+    y1 = chip.parts[3]
+    y2 = chip.parts[4]
+
+    g3 = chip.parts[7]
+    g4 = chip.parts[8]
+
+    rewire!(x1, x = x, zx = zx)
+    rewire!(x2, nx = nx)
+
+    rewire!(y1, x = y, zx = zy)
+    rewire!(y2, nx = ny)
+
+    rewire!(g3, sel = f)
+    rewire!(g4, nx = no)
+
+end
+
+function output(chip::ALU)
+    return chip.outputs.out
+end
 
 
 

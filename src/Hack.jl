@@ -21,6 +21,7 @@ export
     tick!,
     output,
     testBit!,
+    numberOfNandGates,
 
     #pin
     Pin,
@@ -67,7 +68,17 @@ export
     SR,
     DFF,
     DFF2,
-    Bit
+    Bit,
+    Register,
+    RAM8,
+    RAM64,
+    RAM512,
+    RAM4K,
+    RAM16K,
+    PC,
+
+    #computer
+    CPU
 
 
 
@@ -76,6 +87,7 @@ include("pins.jl")
 include("utils.jl")
 include("arithmeticchips.jl")
 include("sequentialchips.jl")
+include("computer.jl")
 
 
 
